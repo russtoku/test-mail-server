@@ -52,6 +52,12 @@ program.
      $ LOG_LEVEL=DEBUG python test_mail_server.py mail_dir
     ```
 
+## Send some emails
+
+The default port that the test mail server listens on is 8025 so you can connect
+to `localhost:8025` without authentication. If you need authentication and/or
+TLS, you'll need to figure that out yourself.
+
 ## Look at the delivered mail
 
 To look at the email that was delivered, you can browse the mail directory and
