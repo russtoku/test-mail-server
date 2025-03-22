@@ -167,6 +167,7 @@ problem. Changing to a virtual environment using Astral's Python package solved 
 Create a virtual environment for a project in the working directory where you'll be doing your
 coding and testing. Activate it and go.
 
+### The steps
 - Install `uv`.
 - Create a `uv.toml` file in the `~/.config/uv/` directory.
 
