@@ -28,8 +28,8 @@ to see that for my purposes all I would need to do is have the SMTP sever delive
 MH-style mailboxes. So I just needed to write a handler for `aiosmtpd` that would do that and
 `asimap` will serve the messages for each user via IMAP.
 
-This is SMTP server just fits my needs and will remain so. You are welcome to
-use it and I hope you might find it helpful.
+This SMTP server just fits my needs and will remain so. You are welcome to use it and I hope you
+find it helpful.
 
 *TODO:* The IMAP server part is coming. It may take the form of a website to read and send
 messsages.
@@ -66,8 +66,67 @@ program.
 ## Send some emails
 
 The default port that the test mail server listens on is 8025 so you can connect
-to `localhost:8025` without authentication. If you need authentication and/or
-TLS, you'll need to figure that out yourself.
+to `localhost:8025` without authentication.
+
+If you need authentication and/or TLS, you'll need to figure that out yourself.
+
+For quick testing of SMTP functionality, you can use `nc` as an email client to talk to the SMTP
+server and send it a message. Here, you can see the responses from the server interleaved with the
+client's requests.
+
+``` console
+$ nc -c localhost 8025
+220 1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa Python SMTP 1.4.6
+HELO uipa.org
+250 1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa
+MAIL FROM: <alice@uipa.org>
+250 OK
+RCPT TO: <bob@doh.hi.gov>
+250 OK
+DATA
+354 End data with <CR><LF>.<CR><LF>
+Hi, Bob!
+
+Look forward to seeing you at the luncheon on Tuesday.
+
+Alice
+.
+250 Message accepted for delivery.
+QUIT
+221 Bye
+```
+
+The client sends this line-by-line:
+
+``` console
+HELO uipa.org
+MAIL FROM: <alice@uipa.org>
+RCPT TO: <bob@doh.hi.gov>
+DATA
+Hi, Bob!
+
+Look forward to seeing you at the luncheon on Tuesday.
+
+Alice
+.
+QUIT
+```
+
+When you do this, the SMTP server's side look like this:
+
+``` console
+$ python test_mail_server.py mail-boxes
+2025-03-22 09:28:48,745 smtp CRITICAL logging level is set to INFO
+2025-03-22 09:28:48,745 smtp INFO Starting server
+2025-03-22 09:30:12,558 smtp INFO Attempting delivery to: mail-boxes/doh.hi.gov/bob for bob@doh.hi.gov
+```
+
+And when you type `Ctl-C` to stop the SMTP server, it looks like this:
+
+``` console
+^C2025-03-22 09:31:03,270 smtp INFO KeyboardInterrupt
+2025-03-22 09:31:03,270 smtp INFO Server stopping.
+```
 
 <a id="delivered_mail"></a>
 ## Look at the delivered mail
