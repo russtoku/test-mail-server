@@ -1,12 +1,15 @@
-# test_mail_server.py - A dummy SMTP server that saves messages to mailboxes on
-#                       the filesystem.
-#                     - 10/18/2024, russtoku@gmail.com
-#                     - License: MIT License
+# File: test_mail_server.py
+# Desc: A dummy SMTP server that saves messages to mailboxes on the filesystem.
+# Date: 03/21/2025, russtoku@gmail.com
+#
+# SPDX-FileType: SOURCE
+# SPDX-FileCopyrightText: Copyright 2025 Russ Tokuyama <russtoku@gmail.com>
+# SPDX-License-Identifier: MIT
 #
 #------------------------------------------------------------
-# Accepts incoming mail and delivers to MH type of mailboxes.
+# Accepts incoming mail on port 8025 and delivers to MH type of mailboxes.
 #
-# In the directory set in the mail_dir variable, there are directories for
+# In the directory set in the MAIL_BOXES_DIR variable, there are directories for
 # email domains. Within each email domain directory, there are directories for
 # each user for user@email.domain.
 #
@@ -18,7 +21,7 @@
 #
 # mail_dir will be created if it doesn't exist. Use relative or full path.
 #
-# Ctrl-C stops server.
+# Ctrl-C stops the server.
 #
 # The LOG_LEVEL environment variable can be used to change the logging level
 # when the program is run. Example:
@@ -31,10 +34,13 @@ import asyncio
 import logging
 import os
 import sys
+import time
 
 from aiosmtpd.controller import Controller
-from email.message import Message as Em_Message
+from email.message import Message
 from mailbox import MH
+from pathlib import Path
+
 
 formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
 ch = logging.StreamHandler()
@@ -42,74 +48,89 @@ ch.setFormatter(formatter)
 log = logging.getLogger('smtp')
 log.addHandler(ch)
 
+def mailbox_from(email_addr: str, mail_dir: Path) -> Path:
+    """Returns a path to the user's mail box. It has the form,
+       f"{mail_dir}/${domain}/${user}", where an email address has the form,
+       f"${user}@${domain}".
+    """
+    if not "@" in email_addr:
+        return ("bad user", "bad domain")
+    user, domain = email_addr.split('@')
 
-# This will be overriden by main().
-mail_dir = "mh-box"
+    # FIXME: Add a simple check for reasonably valid user and domain.
+    mbox_path = f"{mail_dir}/{domain}/{user}"
+    return Path(mbox_path)
 
-def mailbox_from_email(addr):
-    """Returns user and domain from email address of 'user@domain'."""
-    if not "@" in addr:
-        return ""
-    user, domain = addr.split('@')
-    return (user, domain)
+def open_mbox(mbox: Path) -> MH:
+    """Returns an opened MH mail box; creating one if it doesn't exist."""
+    if not mbox.exists():
+        mbox.mkdir(mode=0o750, parents=True, exist_ok=True)
 
-def get_folder(folder, mbox):
-    """Returns an opened folder in mbox creating one if it doesn't exist."""
-    folders = mbox.list_folders()
-    if not folder in folders:
-        log.debug(f"creating {folder}")
-        fl = mbox.add_folder(folder)
-    else:
-        fl = mbox.get_folder(folder)
-    return fl
-
-def deliver_to_mailbox(recipient, mail_dir, msg):
-    """Add a message to the recipient's mailbox. Returns nothing."""
-    user, domain = mailbox_from_email(recipient)
-
-    mdir = MH(mail_dir)
-    mdom = get_folder(domain, mdir)
-    ubox = get_folder(user, mdom)
-    ubox.add(msg)
-    log.debug(f"message delivered to: {mail_dir}/{domain}/{user}")
-
-    ubox.close()
-    mdom.close()
-    mdir.close()
-
+    mh_box = MH(mbox)
+    return mh_box
 
 class RoutingHandler:
     """Route incoming mail to mailboxes for recipients specified in the
        envelope.
+       Takes a mail_path pointing to the location of the MH mail boxes.
     """
-    async def handle_DATA(self, server, session, envelope):
+    def __init__(self, mail_path: Path = Path("")):
+        self.mail_path: Path = mail_path
+
+    async def handle_DATA(self, server, session, envelope) -> list[str]:
+        """Deliver message to recipients' mail boxes. Returns a list of email
+           addresses that couldn't be delivered to.
+        """
         recipients = envelope.rcpt_tos
         msg = envelope.content.decode('utf8', errors='replace')
+        log.debug(f"recipients: {recipients}")
+
+        # FIXME: Prepend the current date to the msg.
+
+        failed_delivery = []
 
         for r in recipients:
-            log.info(f"Delivering to: {mailbox_from_email(r)} for {r}")
-            deliver_to_mailbox(r, mail_dir, msg)
+            mbox_path = mailbox_from(r, self.mail_path)
+            log.info(f"Attempting delivery to: {mbox_path} for {r}")
 
-        return '250 Message accepted for delivery'
+            mh_box = open_mbox(mbox_path)
+            mh_box.lock()
+            key = mh_box.add(msg)
+            if int(key) < 1:
+                failed_delivery.append(r)
+            mh_box.close()
 
-def main(dir):
-    mail_dir = dir
+        error_msg = f" But not to {failed_delivery.join(', ')}" if len(failed_delivery) > 0 else ""
+        server_reply = f"250 Message accepted for delivery.{error_msg}"
 
+        return server_reply
+
+def main(mail_dir: str):
     log_level = os.getenv('LOG_LEVEL', 'INFO')
     log.critical(f"logging level is set to {log_level}")
     log.setLevel(log_level)
 
-    controller = Controller(RoutingHandler())
+    mail_path = Path(mail_dir)
+    if not mail_path.exists():
+        mail_path.mkdir(mode=0o750, parents=True, exist_ok=True)
+        log.info(f"Creating mail box directory, {mail_dir}")
+
+    handler = RoutingHandler(mail_path)
+    controller = Controller(handler)
 
     log.info("Starting server")
-    try:
-        controller.start()
-        while True:
-            pass
-    except KeyboardInterrupt as ki:
-        log.info(f"Server interrupted.")
-    finally:
-        controller.stop()
+    controller.start()
+
+    while True:
+        try:
+            time.sleep(5)
+        except KeyboardInterrupt:
+            log.info("KeyboardInterrupt")
+            break
+        pass
+
+    log.info(f"Server stopping.")
+    controller.stop()
 
 
 if __name__ == '__main__':
@@ -117,10 +138,4 @@ if __name__ == '__main__':
         print(f"usage: {sys.argv[0]} mail_dir", file=sys.stderr, flush=True)
         sys.exit(1)
 
-    from pathlib import Path
-    mail_dir = sys.argv[1]
-    p = Path(mail_dir)
-    if not p.exists():
-        p.mkdir()
-
-    main(p)
+    main(sys.argv[1])
