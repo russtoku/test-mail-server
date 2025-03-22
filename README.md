@@ -42,22 +42,25 @@ messsages.
 - Decide where you want to have the incoming emails delivered to. This is a directory where all
   emails will be delivered to. The directory will be structured with email domain at the top level
   followed by users in each domain. Finally, the emails are stored MH style as separate files in the
-  user directory. See the [delivered mail section](#delivered_mail).
+  user's mailbox directory. See the [delivered mail section](#delivered_mail).
 
 - Run the server.
-    ```
-    $ python test_mail_server.py mail_dir
+    ``` console
+    $ python test_mail_server.py mail-boxes
     ```
 - To stop the server, type `Ctrl-C`.
 
-The LOG_LEVEL environment variable can be used to change the logging level when
+The mailbox directory (`mail-boxes` in the above command line) will be automatically created if it
+doesn't exist.
+
+The `LOG_LEVEL` environment variable can be used to change the logging level when
 the program is run. The default level is *INFO*.
 
 In this example, the environment variable is set just for the running of the
 program.
 
-    ```
-     $ LOG_LEVEL=DEBUG python test_mail_server.py mail_dir
+    ``` console
+     $ LOG_LEVEL=DEBUG python test_mail_server.py mail-boxes
     ```
 
 ## Send some emails
@@ -79,13 +82,13 @@ homer@example.com, and admin@uipa.org:
 ``` console
 mail-boxes
 ├── example.com
-│   ├── bart   <-- bart@example.com
+│   ├── bart   <-- mailbox for bart@example.com
 │   │   ├── 1
 │   │   └── 2
-│   └── homer   <-- homer@example.com
+│   └── homer   <-- mailbox for homer@example.com
 │       └── 1
 └── uipa.org
-    └── admin   <-- admin@uipa.org
+    └── admin   <-- mailbox for admin@uipa.org
         └── 1
 ```
 
