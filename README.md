@@ -31,8 +31,7 @@ MH-style mailboxes. So I just needed to write a handler for `aiosmtpd` that woul
 This SMTP server just fits my needs and will remain so. You are welcome to use it and I hope you
 find it helpful.
 
-*TODO:* The IMAP server part is coming. It may take the form of a website to read and send
-messsages.
+*TODO:* The IMAP server part is coming. I may add a website to read and send messsages.
 
 ## Run the mail server
 
@@ -185,7 +184,7 @@ coding and testing. Activate it and go.
   ``` console
   $ uv venv
   ```
-- Install the dependencies.
+- Install the dependencies. One of two ways:
     - Take advantage of existing `uv.lock` file.
   ``` console
   $ uv sync
