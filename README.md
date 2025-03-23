@@ -36,14 +36,17 @@ messsages.
 
 ## Run the mail server
 
-- Create a Python 3.13 virtual environment. See the section below on [creating a virtual environment](#virtual_env).
-- `pip install aiosmtpd`
 - Clone the repo or just download `test_mail_server.py`.
+- Create a Python 3.13 virtual environment and install the dependencies. See the section below on
+  [creating a virtual environment](#virtual_env).
+- Activate the virtual environment.
+    ``` console
+    $ source .venv/bin/activate
+    ```
 - Decide where you want to have the incoming emails delivered to. This is a directory where all
   emails will be delivered to. The directory will be structured with email domain at the top level
   followed by users in each domain. Finally, the emails are stored MH style as separate files in the
   user's mailbox directory. See the [delivered mail section](#delivered_mail).
-
 - Run the server.
     ``` console
     $ python test_mail_server.py mail-boxes
@@ -154,15 +157,15 @@ mail-boxes
 <a id="virtual_env"></a>
 ## Creating a virtual environment
 
-You can do it your way but I suggest using [`uv`](https://docs.astral.sh/uv/).
+I suggest using [`uv`](https://docs.astral.sh/uv/) but you can do it your own way.
 
-Use `uv` to install the version of Python you want to use. Configure it to use the Python package
-that Astral builds to avoid the quirks and idosyncracies of Python packages from other package
-managers (Homebrew on macOS, Linux package managers, etc.).
+Use `uv` to install the version of Python you want to use by configuring it to use the Python
+package that Astral builds. This avoids the quirks and idosyncracies of Python packages from other
+package managers (Homebrew on macOS, Linux package managers, etc.).
 
 After wasting a couple of days trying figure out why this code no longer worked, I discovered that
 the virtual environment created from another package manager's Python package was the
-problem. Changing to a virtual environment using Astral's Python package solved it.
+problem. Changing the virtual environment to one created using Astral's Python package solved it.
 
 Create a virtual environment for a project in the working directory where you'll be doing your
 coding and testing. Activate it and go.
@@ -181,7 +184,15 @@ coding and testing. Activate it and go.
 - Create the virtual environment by running:
   ``` console
   $ uv venv
+  ```
+- Install the dependencies.
+    - Take advantage of existing `uv.lock` file.
+  ``` console
   $ uv sync
+  ```
+    - Use `pyproject.toml` file.
+  ``` console
+  $ uv pip install -r pyproject.toml
   ```
 
 Now, go have fun.
